@@ -1,5 +1,7 @@
 # Neodymium Unofficial <img src="NDico.png" align="right" width=150>
 
+<sup>**[CurseForge](https://www.curseforge.com/minecraft/mc-mods/neodymium-unofficial) | [Modrinth](https://modrinth.com/mod/nd1710)**</sup>
+
 ## A temporary fork of Neodymium with FalseTweaks compatibility until Makamys comes back
 
 # Original readme below:
