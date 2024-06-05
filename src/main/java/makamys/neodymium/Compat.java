@@ -1,8 +1,9 @@
 package makamys.neodymium;
 
 import com.falsepattern.falsetweaks.api.ThreadedChunkUpdates;
-import com.falsepattern.triangulator.api.ToggleableTessellator;
 import cpw.mods.fml.common.Loader;
+
+import com.falsepattern.falsetweaks.api.triangulator.ToggleableTessellator;
 import makamys.neodymium.config.Config;
 import makamys.neodymium.util.virtualjar.IVirtualJar;
 import makamys.neodymium.util.virtualjar.VirtualJar;
@@ -42,16 +43,13 @@ public class Compat {
     public static void init() {
         isGL33Supported = GLContext.getCapabilities().OpenGL33;
         
-        if (Loader.isModLoaded("triangulator")) {
-            disableTriangulator();
-        }
-
         if (Loader.isModLoaded("rple")) {
             IS_RPLE_PRESENT = true;
         }
 
         if (Loader.isModLoaded("falsetweaks")) {
             IS_FALSE_TWEAKS_PRESENT = true;
+            disableTriangulator();
         }
 
         try {

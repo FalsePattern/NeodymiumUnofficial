@@ -1,4 +1,8 @@
-# Neodymium
+# Neodymium Unofficial <img src="NDico.png" align="right" width=150>
+
+## A temporary fork of Neodymium with FalseTweaks compatibility until Makamys comes back
+
+# Original readme below:
 
 Neodymium is a mod that reimplements chunk rendering in Minecraft 1.7.10 using modern OpenGL. This should improve performance on most hardware.
 
@@ -73,6 +77,8 @@ For more 1.7.10 performance mods, refer to [this list](https://gist.github.com/m
 ## License
 
 This mod is licensed under version 3 of the GNU Lesser General Public License. See [LICENSE](LICENSE) for additional information.
+
+<a href="https://www.flaticon.com/free-icons/neodymium" title="neodymium icons">Neodymium icons created by Freepik - Flaticon</a>
 
 ## Contributing
 
