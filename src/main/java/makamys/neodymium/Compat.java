@@ -3,7 +3,6 @@ package makamys.neodymium;
 import com.falsepattern.falsetweaks.api.ThreadedChunkUpdates;
 import cpw.mods.fml.common.Loader;
 
-import com.falsepattern.falsetweaks.api.triangulator.ToggleableTessellator;
 import makamys.neodymium.config.Config;
 import makamys.neodymium.util.virtualjar.IVirtualJar;
 import makamys.neodymium.util.virtualjar.VirtualJar;
@@ -49,7 +48,6 @@ public class Compat {
 
         if (Loader.isModLoaded("falsetweaks")) {
             IS_FALSE_TWEAKS_PRESENT = true;
-            disableTriangulator();
         }
 
         try {
@@ -172,10 +170,6 @@ public class Compat {
         return Shaders.isShadowPass;
     }
 
-    private static void disableTriangulator() {
-        ((ToggleableTessellator)Tessellator.instance).disableTriangulator();
-    }
-    
     public static void getCompatibilityWarnings(List<Warning> warns, List<Warning> criticalWarns, boolean statusCommand){
         if(Minecraft.getMinecraft().gameSettings.advancedOpengl) {
             warns.add(new Warning("Advanced OpenGL is enabled, performance may be poor." + (statusCommand ? " Click here to disable it." : "")).chatAction("neodymium disable_advanced_opengl"));

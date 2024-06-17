@@ -5,13 +5,11 @@ import lombok.NoArgsConstructor;
 import lombok.val;
 import makamys.neodymium.config.Config;
 import makamys.neodymium.renderer.ChunkMesh;
-import makamys.neodymium.renderer.MeshQuad;
 import makamys.neodymium.renderer.attribs.AttributeSet;
 import makamys.neodymium.util.BufferWriter;
-import org.lwjgl.opengl.GL11;
 
-import static makamys.neodymium.renderer.MeshQuad.DEFAULT_BRIGHTNESS;
-import static makamys.neodymium.renderer.MeshQuad.DEFAULT_COLOR;
+import static makamys.neodymium.renderer.MeshPolygon.DEFAULT_BRIGHTNESS;
+import static makamys.neodymium.renderer.MeshPolygon.DEFAULT_COLOR;
 import static org.lwjgl.opengl.GL11.GL_FLOAT;
 import static org.lwjgl.opengl.GL11.GL_SHORT;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
@@ -21,66 +19,56 @@ import static org.lwjgl.opengl.GL11.GL_UNSIGNED_SHORT;
 public class RenderUtilRPLE implements RenderUtil {
     public static final RenderUtilRPLE INSTANCE = new RenderUtilRPLE();
 
-    public static final int QUAD_OFFSET_U = 3;
-    public static final int QUAD_OFFSET_V = 4;
-    public static final int QUAD_OFFSET_C = 5;
-    public static final int QUAD_OFFSET_BR = 6;
-    public static final int QUAD_OFFSET_BG = 7;
-    public static final int QUAD_OFFSET_BB = 8;
+    public static final int POLYGON_OFFSET_U = 3;
+    public static final int POLYGON_OFFSET_V = 4;
+    public static final int POLYGON_OFFSET_C = 5;
+    public static final int POLYGON_OFFSET_BR = 6;
+    public static final int POLYGON_OFFSET_BG = 7;
+    public static final int POLYGON_OFFSET_BB = 8;
 
     @Override
-    public void readMeshQuad(int[] tessBuffer, int tessOffset, int[] quadBuffer, int quadOffset, float offsetX, float offsetY, float offsetZ, int drawMode, ChunkMesh.Flags flags) {
+    public void readMeshPolygon(int[] tessBuffer, int tessOffset, int[] polygonBuffer, int polygonOffset, float offsetX, float offsetY, float offsetZ, int vertices, ChunkMesh.Flags flags) {
         val tessVertexSize = vertexSizeInTessellator();
-        val quadVertexSize = vertexSizeInQuadBuffer();
+        val polygonVertexSize = vertexSizeInPolygonBuffer();
 
-        int vertices = drawMode == GL11.GL_TRIANGLES ? 3 : 4;
         for(int vi = 0; vi < vertices; vi++) {
             int tI = tessOffset + vi * tessVertexSize;
-            int qI = quadOffset + vi * quadVertexSize;
+            int qI = polygonOffset + vi * polygonVertexSize;
 
-            quadBuffer[qI + QUAD_OFFSET_XPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI]) + offsetX);
-            quadBuffer[qI + QUAD_OFFSET_YPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI + 1]) + offsetY);
-            quadBuffer[qI + QUAD_OFFSET_ZPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI + 2]) + offsetZ);
+            polygonBuffer[qI + POLYGON_OFFSET_XPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI]) + offsetX);
+            polygonBuffer[qI + POLYGON_OFFSET_YPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI + 1]) + offsetY);
+            polygonBuffer[qI + POLYGON_OFFSET_ZPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI + 2]) + offsetZ);
 
-            quadBuffer[qI + QUAD_OFFSET_U] = tessBuffer[tI + 3];
-            quadBuffer[qI + QUAD_OFFSET_V] = tessBuffer[tI + 4];
+            polygonBuffer[qI + POLYGON_OFFSET_U] = tessBuffer[tI + 3];
+            polygonBuffer[qI + POLYGON_OFFSET_V] = tessBuffer[tI + 4];
 
-            quadBuffer[qI + QUAD_OFFSET_C] = flags.hasColor ? tessBuffer[tI + 5] : DEFAULT_COLOR;
+            polygonBuffer[qI + POLYGON_OFFSET_C] = flags.hasColor ? tessBuffer[tI + 5] : DEFAULT_COLOR;
 
             // TODO normals?
 
             if (flags.hasBrightness) {
-                quadBuffer[qI + QUAD_OFFSET_BR] = tessBuffer[tI + 7];
-                quadBuffer[qI + QUAD_OFFSET_BG] = tessBuffer[tI + 8];
-                quadBuffer[qI + QUAD_OFFSET_BB] = tessBuffer[tI + 9];
+                polygonBuffer[qI + POLYGON_OFFSET_BR] = tessBuffer[tI + 7];
+                polygonBuffer[qI + POLYGON_OFFSET_BG] = tessBuffer[tI + 8];
+                polygonBuffer[qI + POLYGON_OFFSET_BB] = tessBuffer[tI + 9];
             } else {
-                quadBuffer[qI + QUAD_OFFSET_BR] = DEFAULT_BRIGHTNESS;
-                quadBuffer[qI + QUAD_OFFSET_BG] = DEFAULT_BRIGHTNESS;
-                quadBuffer[qI + QUAD_OFFSET_BB] = DEFAULT_BRIGHTNESS;
+                polygonBuffer[qI + POLYGON_OFFSET_BR] = DEFAULT_BRIGHTNESS;
+                polygonBuffer[qI + POLYGON_OFFSET_BG] = DEFAULT_BRIGHTNESS;
+                polygonBuffer[qI + POLYGON_OFFSET_BB] = DEFAULT_BRIGHTNESS;
             }
-        }
-
-
-        if(vertices == 3) {
-            // Quadrangulate!
-            int q2 = quadOffset + 2 * quadVertexSize;
-            int q3 = quadOffset + 3 * quadVertexSize;
-
-            System.arraycopy(quadBuffer, q2, quadBuffer, q3, quadVertexSize);
         }
     }
 
     @Override
-    public void writeMeshQuadToBuffer(int[] meshQuadBuffer, int quadOffset, BufferWriter out, int expectedStride) {
-        val vertexSize = vertexSizeInQuadBuffer();
-        for(int vi = 0; vi < 4; vi++) {
-            int offset = quadOffset + vi * vertexSize;
-            out.writeFloat(Float.intBitsToFloat(meshQuadBuffer[offset + QUAD_OFFSET_XPOS]));
-            out.writeFloat(Float.intBitsToFloat(meshQuadBuffer[offset + QUAD_OFFSET_YPOS]));
-            out.writeFloat(Float.intBitsToFloat(meshQuadBuffer[offset + QUAD_OFFSET_ZPOS]));
+    public void writeMeshPolygonToBuffer(int[] meshPolygonBuffer, int polygonOffset, BufferWriter out, int expectedStride, int verticesPerPolygon) {
+        val vertexSize = vertexSizeInPolygonBuffer();
+        for(int vi = 0; vi < verticesPerPolygon; vi++) {
+            int offset = polygonOffset + vi * vertexSize;
+            out.writeFloat(Float.intBitsToFloat(meshPolygonBuffer[offset + POLYGON_OFFSET_XPOS]));
+            out.writeFloat(Float.intBitsToFloat(meshPolygonBuffer[offset + POLYGON_OFFSET_YPOS]));
+            out.writeFloat(Float.intBitsToFloat(meshPolygonBuffer[offset + POLYGON_OFFSET_ZPOS]));
 
-            float u = Float.intBitsToFloat(meshQuadBuffer[offset + QUAD_OFFSET_U]);
-            float v = Float.intBitsToFloat(meshQuadBuffer[offset + QUAD_OFFSET_V]);
+            float u = Float.intBitsToFloat(meshPolygonBuffer[offset + POLYGON_OFFSET_U]);
+            float v = Float.intBitsToFloat(meshPolygonBuffer[offset + POLYGON_OFFSET_V]);
 
             if(Config.shortUV) {
                 out.writeShort((short)(Math.round(u * 32768f)));
@@ -90,11 +78,11 @@ public class RenderUtilRPLE implements RenderUtil {
                 out.writeFloat(v);
             }
 
-            out.writeInt(meshQuadBuffer[offset + QUAD_OFFSET_C]);
+            out.writeInt(meshPolygonBuffer[offset + POLYGON_OFFSET_C]);
 
-            out.writeInt(meshQuadBuffer[offset + QUAD_OFFSET_BR]);
-            out.writeInt(meshQuadBuffer[offset + QUAD_OFFSET_BG]);
-            out.writeInt(meshQuadBuffer[offset + QUAD_OFFSET_BB]);
+            out.writeInt(meshPolygonBuffer[offset + POLYGON_OFFSET_BR]);
+            out.writeInt(meshPolygonBuffer[offset + POLYGON_OFFSET_BG]);
+            out.writeInt(meshPolygonBuffer[offset + POLYGON_OFFSET_BB]);
 
             assert out.position() % expectedStride == 0;
         }
@@ -107,7 +95,7 @@ public class RenderUtilRPLE implements RenderUtil {
     }
 
     @Override
-    public int vertexSizeInQuadBuffer() {
+    public int vertexSizeInPolygonBuffer() {
         // pos + uv + color + brightnessRGB
         return 3 + 2 + 1 + 3;
     }

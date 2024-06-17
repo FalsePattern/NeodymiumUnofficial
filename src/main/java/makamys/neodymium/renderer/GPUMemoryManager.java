@@ -41,6 +41,8 @@ public class GPUMemoryManager {
 
     public final int managerIndex;
     public final int pass;
+    public final int drawMode;
+    public final int verticesPerPolygon;
 
     private int indexSize;
 
@@ -55,11 +57,13 @@ public class GPUMemoryManager {
     public IntBuffer piFirst = null;
     public IntBuffer piCount = null;
 
-    public GPUMemoryManager(int managerIndex, int pass) throws Exception {
+    public GPUMemoryManager(int managerIndex, int pass, int drawMode, int verticesPerPolygon) throws Exception {
         this.bufferSizeBytes = BUFFER_SIZE_BYTES[pass];
 
         this.managerIndex = managerIndex;
         this.pass = pass;
+        this.drawMode = drawMode;
+        this.verticesPerPolygon = verticesPerPolygon;
 
         try {
             this.VBO = createVBO(bufferSizeBytes);
@@ -77,7 +81,7 @@ public class GPUMemoryManager {
     }
 
     public boolean uploadMesh(Mesh mesh) {
-        if(mesh == null || mesh.buffer == null)
+        if(mesh == null || mesh.buffer == null || mesh.verticesPerPolygon != verticesPerPolygon)
             return false;
 
         if(end() + mesh.bufferSize() >= bufferSizeBytes)
@@ -231,7 +235,7 @@ public class GPUMemoryManager {
             copyBytesToVBO(offset, mesh.buffer);
 
         mesh.iFirst = (int) (offset / Neodymium.renderer.getStride());
-        mesh.iCount = mesh.quadCount * 4;
+        mesh.iCount = mesh.polygonCount * verticesPerPolygon;
         mesh.offset = offset;
     }
 
@@ -245,8 +249,8 @@ public class GPUMemoryManager {
     }
 
     private void reAllocIndexBuffers() {
-        piFirst = refreshIntBuffer(piFirst, BufferUtils.createByteBuffer(indexSize * 4).asIntBuffer());
-        piCount = refreshIntBuffer(piCount, BufferUtils.createByteBuffer(indexSize * 4).asIntBuffer());
+        piFirst = refreshIntBuffer(piFirst, BufferUtils.createByteBuffer(indexSize * verticesPerPolygon).asIntBuffer());
+        piCount = refreshIntBuffer(piCount, BufferUtils.createByteBuffer(indexSize * verticesPerPolygon).asIntBuffer());
     }
 
     private void moveMeshInVBO(Mesh mesh, long newOffset) {

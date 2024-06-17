@@ -6,24 +6,24 @@ import makamys.neodymium.renderer.attribs.AttributeSet;
 import makamys.neodymium.util.BufferWriter;
 
 public interface RenderUtil {
-    int QUAD_OFFSET_XPOS = 0;
-    int QUAD_OFFSET_YPOS = 1;
-    int QUAD_OFFSET_ZPOS = 2;
+    int POLYGON_OFFSET_XPOS = 0;
+    int POLYGON_OFFSET_YPOS = 1;
+    int POLYGON_OFFSET_ZPOS = 2;
 
-    void readMeshQuad(int[] tessBuffer, int tessOffset, int[] quadBuffer, int quadOffset, float offsetX, float offsetY, float offsetZ, int drawMode, ChunkMesh.Flags flags);
+    void readMeshPolygon(int[] tessBuffer, int tessOffset, int[] polygonBuffer, int polygonOffset, float offsetX, float offsetY, float offsetZ, int vertices, ChunkMesh.Flags flags);
 
     /**
      * @implSpec These needs to be kept in sync with the attributes in {@link NeoRenderer#init()}
      */
-    void writeMeshQuadToBuffer(int[] meshQuadBuffer, int quadOffset, BufferWriter out, int expectedStride);
+    void writeMeshPolygonToBuffer(int[] meshPolygonBuffer, int polygonOffset, BufferWriter out, int expectedStride, int verticesPerPolygon);
 
     int vertexSizeInTessellator();
 
-    int vertexSizeInQuadBuffer();
+    int vertexSizeInPolygonBuffer();
 
-    // Include the quad normal
-    default int quadSize() {
-        return vertexSizeInQuadBuffer() * 4 + 1;
+    // Include the polygon normal
+    default int polygonSize(int verticesPerPolygon) {
+        return vertexSizeInPolygonBuffer() * verticesPerPolygon + 1;
     }
 
     void initVertexAttributes(AttributeSet attributes);

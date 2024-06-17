@@ -32,30 +32,30 @@ public class ChunkMesh extends Mesh {
     
     WorldRenderer wr;
     private int tesselatorDataCount;
-    
+
     private int[] subMeshStart = new int[NORMAL_ORDER.length]; 
     
     public static final AtomicLong usedRAM = new AtomicLong();
     public static final AtomicInteger instances = new AtomicInteger();
 
-    public static final ThreadLocal<QuadMeshBuffer> quadBuf = ThreadLocal.withInitial(QuadMeshBuffer::new);
+    public static final ThreadLocal<PolygonMeshBuffer> polygonBuf = ThreadLocal.withInitial(PolygonMeshBuffer::new);
 
-    private static final QuadNormal[] NORMAL_ORDER = new QuadNormal[] {QuadNormal.NONE, QuadNormal.POSITIVE_Y, QuadNormal.POSITIVE_X, QuadNormal.POSITIVE_Z, QuadNormal.NEGATIVE_X, QuadNormal.NEGATIVE_Z, QuadNormal.NEGATIVE_Y};
-    private static final int[] QUAD_NORMAL_TO_NORMAL_ORDER;
-    private static final int[] NORMAL_ORDER_TO_QUAD_NORMAL;
+    private static final PolygonNormal[] NORMAL_ORDER = new PolygonNormal[] {PolygonNormal.NONE, PolygonNormal.POSITIVE_Y, PolygonNormal.POSITIVE_X, PolygonNormal.POSITIVE_Z, PolygonNormal.NEGATIVE_X, PolygonNormal.NEGATIVE_Z, PolygonNormal.NEGATIVE_Y};
+    private static final int[] POLYGON_NORMAL_TO_NORMAL_ORDER;
+    private static final int[] NORMAL_ORDER_TO_POLYGON_NORMAL;
 
     private static final Flags FLAGS = new Flags(true, true, true, false);
     
     static {
-        QUAD_NORMAL_TO_NORMAL_ORDER = new int[QuadNormal.values().length];
-        NORMAL_ORDER_TO_QUAD_NORMAL = new int[QuadNormal.values().length];
-        for(int i = 0; i < QuadNormal.values().length; i++) {
-            int idx = Arrays.asList(NORMAL_ORDER).indexOf(QuadNormal.values()[i]);
+        POLYGON_NORMAL_TO_NORMAL_ORDER = new int[PolygonNormal.values().length];
+        NORMAL_ORDER_TO_POLYGON_NORMAL = new int[PolygonNormal.values().length];
+        for(int i = 0; i < PolygonNormal.values().length; i++) {
+            int idx = Arrays.asList(NORMAL_ORDER).indexOf(PolygonNormal.values()[i]);
             if(idx == -1) {
                 idx = 0;
             }
-            QUAD_NORMAL_TO_NORMAL_ORDER[i] = idx;
-            NORMAL_ORDER_TO_QUAD_NORMAL[idx] = i;
+            POLYGON_NORMAL_TO_NORMAL_ORDER[i] = idx;
+            NORMAL_ORDER_TO_POLYGON_NORMAL[idx] = i;
         }
     }
     
@@ -69,7 +69,7 @@ public class ChunkMesh extends Mesh {
         
         instances.getAndIncrement();
         
-        if(!quadBuf.get().isEmpty()) {
+        if(!polygonBuf.get().isEmpty()) {
             LOGGER.error("Invalid state: tried to construct a chunk mesh before the previous one has finished constructing!");
         }
     }
@@ -86,6 +86,14 @@ public class ChunkMesh extends Mesh {
         if(t.drawMode != GL11.GL_QUADS && t.drawMode != GL11.GL_TRIANGLES) {
             errors.add("Unsupported draw mode: " + t.drawMode);
         }
+        if (drawMode == -1) {
+            drawMode = t.drawMode;
+            verticesPerPolygon = t.drawMode == GL11.GL_QUADS ? 4 : 3;
+        } else if (drawMode != t.drawMode) {
+            errors.add("Mismatched draw mode. Expected: " + drawMode + ", tessellator: " + t.drawMode);
+        }
+        int vertices = verticesPerPolygon;
+
         if(!t.hasTexture) {
             errors.add(String.format("Texture data is missing."));
         }
@@ -101,20 +109,18 @@ public class ChunkMesh extends Mesh {
 //        }
         FLAGS.hasBrightness = t.hasBrightness;
         FLAGS.hasColor = t.hasColor;
-        
-        int verticesPerPrimitive = t.drawMode == GL11.GL_QUADS ? 4 : 3;
 
         int tessellatorVertexSize = Neodymium.util.vertexSizeInTessellator();
-        int quadSize = Neodymium.util.quadSize();
+        int polygonSize = Neodymium.util.polygonSize(vertices);
 
-        int quadCount = t.vertexCount / verticesPerPrimitive;
+        int polygonCount = t.vertexCount / vertices;
 
-        val buf = quadBuf.get();
-        buf.ensureCapacity(quadCount * quadSize);
-        for(int quadI = 0; quadI < quadCount; quadI++) {
-            boolean deleted = MeshQuad.processQuad(t.rawBuffer, quadI * verticesPerPrimitive * tessellatorVertexSize, buf.data, buf.size, NeoRegion.toRelativeOffset(-t.xOffset), NeoRegion.toRelativeOffset(-t.yOffset), NeoRegion.toRelativeOffset(-t.zOffset), t.drawMode, FLAGS);
+        val buf = polygonBuf.get();
+        buf.ensureCapacity(polygonCount * polygonSize);
+        for(int polygonI = 0; polygonI < polygonCount; polygonI++) {
+            boolean deleted = MeshPolygon.processPolygon(t.rawBuffer, polygonI * vertices * tessellatorVertexSize, buf.data, buf.size, NeoRegion.toRelativeOffset(-t.xOffset), NeoRegion.toRelativeOffset(-t.yOffset), NeoRegion.toRelativeOffset(-t.zOffset), vertices, FLAGS);
             if (!deleted) {
-                buf.size += quadSize;
+                buf.size += polygonSize;
             }
         }
         
@@ -160,8 +166,8 @@ public class ChunkMesh extends Mesh {
     }
 
     public void finishConstruction() {
-        val buf = quadBuf.get();
-        quadCount = buf.size / Neodymium.util.quadSize();
+        val buf = polygonBuf.get();
+        polygonCount = buf.size / Neodymium.util.polygonSize(verticesPerPolygon);
         buffer = createBuffer(buf.data);
         bufferSize = buffer.limit();
         usedRAM.getAndAdd(bufferSize);
@@ -171,36 +177,36 @@ public class ChunkMesh extends Mesh {
 
     //Used by FalseTweaks when cancelling a threaded render job
     public static void cancelRendering() {
-        val buf = quadBuf.get();
+        val buf = polygonBuf.get();
         if (!buf.isEmpty()) {
             buf.reset();
             LOGGER.debug("Cancelled unfinished render pass!");
         }
     }
 
-    private static final ThreadLocal<MeshQuadBucketSort> threadBucketer = ThreadLocal.withInitial(
-            MeshQuadBucketSort::new);
+    private static final ThreadLocal<MeshPolygonBucketSort> threadBucketer = ThreadLocal.withInitial(
+            MeshPolygonBucketSort::new);
 
-    private ByteBuffer createBuffer(int[] quads) {
+    private ByteBuffer createBuffer(int[] polygons) {
         val stride = Neodymium.renderer.getStride();
-        ByteBuffer buffer = BufferUtils.createByteBuffer(quadCount * 4 * stride);
+        ByteBuffer buffer = BufferUtils.createByteBuffer(polygonCount * verticesPerPolygon * stride);
         BufferWriter out = new BufferWriter(buffer);
         
         boolean sortByNormals = pass == 0;
 
-        val quadSize = Neodymium.util.quadSize();
+        val polygonSize = Neodymium.util.polygonSize(verticesPerPolygon);
         int[] indices = null;
         if(sortByNormals) {
-            indices = threadBucketer.get().sort(quads, quadSize, quadCount);
+            indices = threadBucketer.get().sort(polygons, polygonSize, polygonCount);
         }
 
-        for (int i = 0; i < quadCount; i++) {
+        for (int i = 0; i < polygonCount; i++) {
             int index = indices != null ? indices[i] : i;
-            int subMeshStartIdx = sortByNormals ? QUAD_NORMAL_TO_NORMAL_ORDER[quads[(index + 1) * quadSize - 1]] : 0;
+            int subMeshStartIdx = sortByNormals ? POLYGON_NORMAL_TO_NORMAL_ORDER[polygons[(index + 1) * polygonSize - 1]] : 0;
             if(subMeshStart[subMeshStartIdx] == -1) {
                 subMeshStart[subMeshStartIdx] = i;
             }
-            Neodymium.util.writeMeshQuadToBuffer(quads, index * quadSize, out, stride);
+            Neodymium.util.writeMeshPolygonToBuffer(polygons, index * polygonSize, out, stride, verticesPerPolygon);
         }
 
         
@@ -249,16 +255,16 @@ public class ChunkMesh extends Mesh {
         for(int i = 0; i < NORMAL_ORDER.length + 1; i++) {
             if(i < subMeshStart.length && subMeshStart[i] == -1) continue;
             
-            QuadNormal normal = i < NORMAL_ORDER.length ? NORMAL_ORDER[i] : null;
+            PolygonNormal normal = i < NORMAL_ORDER.length ? NORMAL_ORDER[i] : null;
             boolean isVisible = normal != null && isNormalVisible(normal, cameraXDiv, cameraYDiv, cameraZDiv, pass);
             
             if(isVisible && startIndex == -1) {
-                startIndex = subMeshStart[QUAD_NORMAL_TO_NORMAL_ORDER[normal.ordinal()]];
+                startIndex = subMeshStart[POLYGON_NORMAL_TO_NORMAL_ORDER[normal.ordinal()]];
             } else if(!isVisible && startIndex != -1) {
-                int endIndex = i < subMeshStart.length ? subMeshStart[i] : quadCount;
+                int endIndex = i < subMeshStart.length ? subMeshStart[i] : polygonCount;
                 
-                piFirst.put(iFirst + (startIndex*4));
-                piCount.put((endIndex - startIndex)*4);
+                piFirst.put(iFirst + (startIndex*verticesPerPolygon));
+                piCount.put((endIndex - startIndex)*verticesPerPolygon);
                 renderedMeshes++;
                 
                 startIndex = -1;
@@ -268,7 +274,7 @@ public class ChunkMesh extends Mesh {
         return renderedMeshes;
     }
     
-    private boolean isNormalVisible(QuadNormal normal, int interpXDiv, int interpYDiv, int interpZDiv, int pass) {
+    private boolean isNormalVisible(PolygonNormal normal, int interpXDiv, int interpYDiv, int interpZDiv, int pass) {
         switch(normal) {
         case POSITIVE_X:
             return interpXDiv >= ((x + 0));
@@ -283,8 +289,8 @@ public class ChunkMesh extends Mesh {
         case NEGATIVE_Z:
             return interpZDiv < ((z + 1));
         default:
-            return pass != 0 || Config.maxUnalignedQuadDistance == Integer.MAX_VALUE
-            || Util.distSq(interpXDiv, interpYDiv, interpZDiv, x, y, z) < Math.pow((double)Config.maxUnalignedQuadDistance, 2);
+            return pass != 0 || Config.maxUnalignedPolygonDistance == Integer.MAX_VALUE
+            || Util.distSq(interpXDiv, interpYDiv, interpZDiv, x, y, z) < Math.pow((double)Config.maxUnalignedPolygonDistance, 2);
         }
     }
     
@@ -334,7 +340,7 @@ public class ChunkMesh extends Mesh {
         }
     }
 
-    public static class QuadMeshBuffer {
+    public static class PolygonMeshBuffer {
         public int[] data = new int[1024];
         public int size = 0;
 
@@ -354,41 +360,41 @@ public class ChunkMesh extends Mesh {
         }
     }
 
-    public static class MeshQuadBucketSort {
-        private static final int bucketCount = NORMAL_ORDER_TO_QUAD_NORMAL.length;
+    public static class MeshPolygonBucketSort {
+        private static final int bucketCount = NORMAL_ORDER_TO_POLYGON_NORMAL.length;
         private final TIntArrayList[] buckets;
         private int[] resultBuffer;
 
-        public MeshQuadBucketSort() {
+        public MeshPolygonBucketSort() {
             buckets = new TIntArrayList[bucketCount];
             for (int i = 0; i < bucketCount; i++) {
                 buckets[i] = new TIntArrayList();
             }
         }
 
-        private static int bucket(int[] buffer, int quadSize, int index) {
-            return buffer[quadSize * (index + 1) - 1];
+        private static int bucket(int[] buffer, int polygonSize, int index) {
+            return buffer[polygonSize * (index + 1) - 1];
         }
 
-        public int[] sort(int[] buffer, int quadSize, int quadCount) {
+        public int[] sort(int[] buffer, int polygonSize, int polygonCount) {
             for (int i = 0; i < bucketCount; i++) {
                 buckets[i].resetQuick();
             }
-            for (int i = 0; i < quadCount; i++) {
-                buckets[bucket(buffer, quadSize, i)].add(i);
+            for (int i = 0; i < polygonCount; i++) {
+                buckets[bucket(buffer, polygonSize, i)].add(i);
             }
-            if (resultBuffer == null || resultBuffer.length < quadCount) {
-                resultBuffer = new int[quadCount];
+            if (resultBuffer == null || resultBuffer.length < polygonCount) {
+                resultBuffer = new int[polygonCount];
             }
             val result = resultBuffer;
             int offset = 0;
             for (int i = 0; i < bucketCount; i++) {
-                val bucket = buckets[NORMAL_ORDER_TO_QUAD_NORMAL[i]];
+                val bucket = buckets[NORMAL_ORDER_TO_POLYGON_NORMAL[i]];
                 val size = bucket.size();
                 bucket.toArray(result, 0, offset, size);
                 offset += size;
             }
-            assert offset == quadCount;
+            assert offset == polygonCount;
             return result;
         }
     }

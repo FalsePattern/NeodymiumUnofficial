@@ -32,7 +32,6 @@ import org.apache.commons.lang3.EnumUtils;
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.config.IConfigElement;
-import makamys.neodymium.Neodymium;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.Configuration;
@@ -62,8 +61,8 @@ public class Config {
     
     @ConfigEnum(cat="render", def="auto", clazz=AutomatableBoolean.class, com="Render fog? Slightly reduces framerate. `auto` means the OpenGL setting will be respected (as set by mods like OptiFine).\nValid values: true, false, auto")
     public static AutomatableBoolean renderFog;
-    @ConfigInt(cat="render", def=Integer.MAX_VALUE, min=0, max=Integer.MAX_VALUE, com="Chunks further away than this distance (in chunks) will not have unaligned quads such as tall grass rendered.")
-    public static int maxUnalignedQuadDistance;
+    @ConfigInt(cat="render", def=Integer.MAX_VALUE, min=0, max=Integer.MAX_VALUE, com="Chunks further away than this distance (in chunks) will not have unaligned polygons such as tall grass rendered.")
+    public static int maxUnalignedPolygonDistance;
     @ConfigInt(cat="render", def=256,min=16,max=1024,com = "The size of the allocation chunks for opaque geometry (in Megabytes). Requires game restart to apply.")
     public static int bufferSizePass0;
     @ConfigInt(cat="render", def=64,min=16,max=1024,com = "The size of the allocation chunks for transparent geometry (in Megabytes). Requires game restart to apply.")

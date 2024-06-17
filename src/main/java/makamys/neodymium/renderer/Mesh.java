@@ -10,7 +10,7 @@ public abstract class Mesh {
 	
     /** Can be null, unless gpuStatus is SENT */
 	public ByteBuffer buffer;
-	public int quadCount;
+	public int polygonCount;
 	public boolean visible;
 	public GPUStatus gpuStatus = GPUStatus.UNSENT;
 	public GPUMemoryManager attachedManager = null;
@@ -18,8 +18,10 @@ public abstract class Mesh {
 	public long offset = -1;
 	public int pass;
 	int x, y, z;
-	public QuadNormal normal = QuadNormal.NONE;
+	public PolygonNormal normal = PolygonNormal.NONE;
     public NeoRegion containingRegion;
+	public int verticesPerPolygon = -1;
+	public int drawMode = -1;
 	
 	public double distSq(double x2, double y2, double z2) {
 	    return Util.distSq(x + 0.5, y + 0.5, z + 0.5, x2, y2, z2);

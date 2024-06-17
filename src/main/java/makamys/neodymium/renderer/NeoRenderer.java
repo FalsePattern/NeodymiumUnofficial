@@ -84,8 +84,8 @@ public class NeoRenderer {
     int eyePosYTDiv;
     int eyePosZTDiv;
 
-    private int renderedMeshesRender, renderedQuadsRender;
-    private int renderedMeshesShadow, renderedQuadsShadow;
+    private int renderedMeshesRender, renderedPolygonsRender;
+    private int renderedMeshesShadow, renderedPolygonsShadow;
     private int frameCount;
 
     public NeoRenderer(World world) {
@@ -113,9 +113,9 @@ public class NeoRenderer {
 
         if (isFirstPass) {
             renderedMeshesRender = 0;
-            renderedQuadsRender = 0;
+            renderedPolygonsRender = 0;
             renderedMeshesShadow = 0;
-            renderedQuadsShadow = 0;
+            renderedPolygonsShadow = 0;
 
             mainLoop();
             if (mc.currentScreen == null)
@@ -238,11 +238,11 @@ public class NeoRenderer {
                             renderedMeshesRender += meshes;
                         }
                         for (int j = mem.piCount.position() - meshes; j < mem.piCount.position(); j++) {
-                            val count = mem.piCount.get(j) / 4;
+                            val count = mem.piCount.get(j) / mem.verticesPerPolygon;
                             if (shadowPass) {
-                                renderedQuadsShadow += count;
+                                renderedPolygonsShadow += count;
                             } else {
-                                renderedQuadsRender += count;
+                                renderedPolygonsRender += count;
                             }
                         }
                     }
@@ -442,7 +442,7 @@ public class NeoRenderer {
                     glUniform3f(u_renderOffset, (float) (region.originX - eyePosX), (float) (region.originY - eyePosY), (float) (region.originZ - eyePosZ));
                 }
 
-                glMultiDrawArrays(GL_QUADS, mem.piFirst, mem.piCount);
+                glMultiDrawArrays(mem.drawMode, mem.piFirst, mem.piCount);
 
                 if (Compat.isOptiFineShadersEnabled())
                     GL11.glPopMatrix();
@@ -545,7 +545,7 @@ public class NeoRenderer {
     }
 
     /**
-     * @implSpec The attributes here need to be kept in sync with {@link RenderUtil#writeMeshQuadToBuffer(MeshQuad, BufferWriter, int)}
+     * @implSpec The attributes here need to be kept in sync with {@link makamys.neodymium.renderer.compat.RenderUtil#writeMeshPolygonToBuffer(int[], int, BufferWriter, int, int)}
      */
     public boolean init() {
         Compat.updateOptiFineShadersState();
@@ -558,8 +558,8 @@ public class NeoRenderer {
         return true;
     }
 
-    private GPUMemoryManager initMemoryManager(int pass) throws Exception {
-        val mem = new GPUMemoryManager(mems.size(), pass);
+    private GPUMemoryManager initMemoryManager(int pass, int drawMode, int verticesPerPolygon) throws Exception {
+        val mem = new GPUMemoryManager(mems.size(), pass, drawMode, verticesPerPolygon);
         mems.add(mem);
         memMap.computeIfAbsent(pass, p -> new ArrayList<>()).add(mem);
 
@@ -745,7 +745,7 @@ public class NeoRenderer {
 
 
     protected void uploadMeshToGPU(Mesh mesh) {
-        if (mesh.gpuStatus != GPUStatus.UNSENT || mesh.buffer == null) {
+        if (mesh.gpuStatus != GPUStatus.UNSENT || mesh.buffer == null || mesh.verticesPerPolygon == -1) {
             return;
         }
         boolean sent = false;
@@ -760,7 +760,7 @@ public class NeoRenderer {
             }
         if (!sent) {
             try {
-                mem = initMemoryManager(mesh.pass);
+                mem = initMemoryManager(mesh.pass, mesh.drawMode, mesh.verticesPerPolygon);
             } catch (Exception e) {
                 ChatUtil.showNeoChatMessage("Could not allocate memory buffer: " + e.getMessage(), ChatUtil.MessageVerbosity.ERROR);
                 e.printStackTrace();
@@ -804,10 +804,10 @@ public class NeoRenderer {
         );
         text.addAll(Arrays.asList(
                 "Meshes: " + ChunkMesh.instances.get() + " (" + ChunkMesh.usedRAM.get() / 1024 / 1024 + "MB)",
-                "Rendered: " + renderedMeshesRender + " (" + renderedQuadsRender / 1000 + "KQ)"
+                "Rendered: " + renderedMeshesRender + " (" + renderedPolygonsRender / 1000 + "KQ)"
                                  ));
         if (Compat.isOptiFineShadersEnabled()) {
-            text.add("Shadow Rendered: " + renderedMeshesShadow + " (" + renderedQuadsShadow / 1000 + "KQ)");
+            text.add("Shadow Rendered: " + renderedMeshesShadow + " (" + renderedPolygonsShadow / 1000 + "KQ)");
         }
         text.add("VRAM buffers:");
         for (int i = 0; i < mems.size(); i++) {
