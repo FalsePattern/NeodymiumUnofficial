@@ -10,7 +10,7 @@ import makamys.neodymium.Neodymium;
 import net.minecraft.client.gui.GuiMainMenu;
 
 @Mixin(GuiMainMenu.class)
-abstract class MixinGuiMainMenu {
+public abstract class MixinGuiMainMenu {
     @Shadow
     private String splashText;
     

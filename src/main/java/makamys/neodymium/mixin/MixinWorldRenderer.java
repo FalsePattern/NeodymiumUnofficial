@@ -26,7 +26,7 @@ import java.util.List;
 
 /** Inserts hooks in WorldRenderer to listen for changes, and to grab the tessellator data right before rendering. */
 @Mixin(WorldRenderer.class)
-abstract class MixinWorldRenderer implements NeodymiumWorldRenderer {
+public abstract class MixinWorldRenderer implements NeodymiumWorldRenderer {
     // ---additions---
 
     @Unique

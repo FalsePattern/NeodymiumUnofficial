@@ -13,7 +13,7 @@ import makamys.neodymium.renderer.ChunkMesh;
 import net.minecraft.client.renderer.Tessellator;
 
 @Mixin(Tessellator.class)
-abstract class MixinTessellator implements NeodymiumTessellator {
+public abstract class MixinTessellator implements NeodymiumTessellator {
     // ---additions---
     @Unique
     private ChunkMesh nd$captureTarget;

@@ -16,7 +16,7 @@ import net.minecraft.entity.EntityLivingBase;
 
 /** Blocks vanilla chunk rendering while NeoRenderer is active. */
 @Mixin(RenderGlobal.class)
-abstract class MixinRenderGlobal {
+public abstract class MixinRenderGlobal {
     @Unique
     private boolean nd$isInsideUpdateRenderers;
 
