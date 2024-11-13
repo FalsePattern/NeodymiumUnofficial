@@ -1,7 +1,7 @@
 package makamys.neodymium.renderer.compat;
 
 import com.falsepattern.rple.api.client.RPLELightMapUtil;
-import com.falsepattern.rple.api.client.RPLEShaderConstants;
+import com.falsepattern.rple.internal.client.render.ShaderConstants;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.val;
@@ -180,12 +180,12 @@ public class RenderUtilShaderRPLE implements RenderUtil {
         ARBVertexShader.glEnableVertexAttribArrayARB(midTexCoordAttrib);
 
         RPLELightMapUtil.enableVertexPointersVBO();
-        ARBVertexShader.glVertexAttribPointerARB(RPLEShaderConstants.edgeTexCoordAttrib,
+        ARBVertexShader.glVertexAttribPointerARB(ShaderConstants.edgeTexCoordAttrib,
                                                  2,
                                                  GL_FLOAT,
                                                  false,
                                                  stride,
                                                  80);
-        ARBVertexShader.glEnableVertexAttribArrayARB(RPLEShaderConstants.edgeTexCoordAttrib);
+        ARBVertexShader.glEnableVertexAttribArrayARB(ShaderConstants.edgeTexCoordAttrib);
     }
 }

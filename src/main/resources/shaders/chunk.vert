@@ -29,6 +29,9 @@ out vec2 BTexCoordB;
 #else
 out vec2 BTexCoord;
 #endif
+#ifdef DYN_LIGHTS
+out vec3 UPos;
+#endif
 out vec4 Color;
 out vec4 Viewport;
 out mat4 ProjInv;
@@ -47,6 +50,9 @@ void main()
 	BTexCoordB = aBTexCoordB;
 #else
 	BTexCoord = aBTexCoord;
+#endif
+#ifdef DYN_LIGHTS
+	UPos = untransformedPos.xyz;
 #endif
 	Color = aColor;
 	

@@ -1,36 +1,53 @@
 package makamys.neodymium.util;
 
+import lombok.val;
+
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 public class Preprocessor {
     
     public static String preprocess(String text, Map<String, String> defines) {
         String[] lines = text.replaceAll("\\r\\n", "\n").split("\\n");
-        
-        IfElseBlockStatus ifElseBlockStatus = IfElseBlockStatus.NONE;
-        boolean ifElseConditionMet = false;
+
+        val ifElseBlockStatus = new Stack<IfElseBlockStatus>();
+        ifElseBlockStatus.push(IfElseBlockStatus.NONE);
+        val ifElseConditionMet = new Stack<Boolean>();
         
         for(int i = 0; i < lines.length; i++) {
             String line = lines[i];
             
             boolean commentLine = false;
-            
-            if(line.startsWith("#ifdef ")) {
-                ifElseBlockStatus = IfElseBlockStatus.IF;
-                ifElseConditionMet = defines.containsKey(line.split(" ")[1]);
+
+            String preProcLine = line.trim();
+            if(preProcLine.startsWith("#ifdef ")) {
+                ifElseBlockStatus.push(IfElseBlockStatus.IF);
+                boolean prev = ifElseConditionMet.isEmpty() || ifElseConditionMet.peek();
+                ifElseConditionMet.push(prev && defines.containsKey(preProcLine.split(" ")[1]));
                 commentLine = true;
-            } else if(line.startsWith("#else")) {
-                ifElseBlockStatus = IfElseBlockStatus.ELSE;
+            } else if(preProcLine.startsWith("#else")) {
+                if (ifElseBlockStatus.peek() == IfElseBlockStatus.NONE) {
+                    throw new IllegalStateException("#else encountered outside of an ifdef block!");
+                }
+                val curr = !ifElseConditionMet.pop();
+                val prev = ifElseConditionMet.isEmpty() || ifElseConditionMet.peek();
+                ifElseConditionMet.push(prev && curr);
+                ifElseBlockStatus.pop();
+                ifElseBlockStatus.push(IfElseBlockStatus.ELSE);
                 commentLine = true;
-            } else if(line.startsWith("#endif")) {
-                ifElseBlockStatus = IfElseBlockStatus.NONE;
+            } else if(preProcLine.startsWith("#endif")) {
+                if (ifElseBlockStatus.peek() == IfElseBlockStatus.NONE) {
+                    throw new IllegalStateException("#endif encountered outside of an ifdef/else block!");
+                }
+                ifElseBlockStatus.pop();
+                ifElseConditionMet.pop();
                 commentLine = true;
             } else {
-                if(ifElseBlockStatus == IfElseBlockStatus.IF && !ifElseConditionMet) {
+                if(ifElseBlockStatus.peek() == IfElseBlockStatus.IF && !ifElseConditionMet.peek()) {
                     commentLine = true;
                 }
-                if(ifElseBlockStatus == IfElseBlockStatus.ELSE && ifElseConditionMet) {
+                if(ifElseBlockStatus.peek() == IfElseBlockStatus.ELSE && !ifElseConditionMet.peek()) {
                     commentLine = true;
                 }
             }

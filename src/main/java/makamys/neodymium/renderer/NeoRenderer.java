@@ -1,5 +1,7 @@
 package makamys.neodymium.renderer;
 
+import com.falsepattern.rple.api.common.ServerColorHelper;
+import com.falsepattern.rple.internal.client.dynlights.ColorDynamicLights;
 import lombok.val;
 import lombok.var;
 import makamys.neodymium.Compat;
@@ -500,14 +502,6 @@ public class NeoRenderer {
         int u_modelView = glGetUniformLocation(shaderProgram, "modelView");
         int u_proj = glGetUniformLocation(shaderProgram, "proj");
         int u_playerPos = glGetUniformLocation(shaderProgram, "playerPos");
-        int u_light = 0, u_light_r = 0, u_light_g = 0, u_light_b = 0;
-        if (Compat.isRPLEModPresent()) {
-            u_light_r = glGetUniformLocation(shaderProgram, "lightTexR");
-            u_light_g = glGetUniformLocation(shaderProgram, "lightTexG");
-            u_light_b = glGetUniformLocation(shaderProgram, "lightTexB");
-        } else {
-            u_light = glGetUniformLocation(shaderProgram, "lightTex");
-        }
         int u_viewport = glGetUniformLocation(shaderProgram, "viewport");
         int u_projInv = glGetUniformLocation(shaderProgram, "projInv");
         int u_fogColor = glGetUniformLocation(shaderProgram, "fogColor");
@@ -523,16 +517,33 @@ public class NeoRenderer {
         glUniform2(u_fogStartEnd, fogStartEnd);
         glUniform1i(u_fogMode, glGetInteger(GL_FOG_MODE));
         glUniform1f(u_fogDensity, glGetFloat(GL_FOG_DENSITY));
-
         glUniform3f(u_playerPos, (float) eyePosX, (float) eyePosY, (float) eyePosZ);
+
+        if (Compat.ft$isDynamicLights()) {
+            int u_playerHandLight = glGetUniformLocation(shaderProgram, "playerHandLight");
+            if (Compat.isRPLEModPresent()) {
+                short light = Compat.RPLECompat.getLightLevel(Minecraft.getMinecraft().renderViewEntity);
+                float r = ServerColorHelper.red(light) / 16.0f;
+                float g = ServerColorHelper.green(light) / 16.0f;
+                float b = ServerColorHelper.blue(light) / 16.0f;
+                glUniform3f(u_playerHandLight, r, g, b);
+            } else {
+                int playerLight = Compat.FalseTweaksCompat.getLightLevel(Minecraft.getMinecraft().renderViewEntity);
+                glUniform1f(u_playerHandLight, playerLight / 16.0f);
+            }
+        }
 
         if (Compat.isRPLEModPresent()) {
             //TODO connect to RPLE gl api (once that exists)
             // For now we just use the RPLE default texture indices
+            int u_light_r = glGetUniformLocation(shaderProgram, "lightTexR");
+            int u_light_g = glGetUniformLocation(shaderProgram, "lightTexG");
+            int u_light_b = glGetUniformLocation(shaderProgram, "lightTexB");
             glUniform1i(u_light_r, 1);
             glUniform1i(u_light_g, 2);
             glUniform1i(u_light_b, 3);
         } else {
+            int u_light = glGetUniformLocation(shaderProgram, "lightTex");
             glUniform1i(u_light, 1);
         }
 
@@ -592,6 +603,17 @@ public class NeoRenderer {
             }
             if (pass == 0) {
                 defines.put("PASS_0", "");
+            }
+            if (Compat.ft$isDynamicLights()) {
+                defines.put("DYN_LIGHTS", "");
+                if (Compat.ft$isDynamicLightsCircular()) {
+                    defines.put("DYN_LIGHTS_CIRCULAR", "");
+                }
+                if (Compat.isRPLEModPresent()) {
+                    defines.put("DYN_LIGHTS_DATATYPE", "vec3");
+                } else {
+                    defines.put("DYN_LIGHTS_DATATYPE", "float");
+                }
             }
 
             attributeSet.addDefines(defines);

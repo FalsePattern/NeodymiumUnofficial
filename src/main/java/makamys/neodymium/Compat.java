@@ -1,14 +1,18 @@
 package makamys.neodymium;
 
 import com.falsepattern.falsetweaks.api.ThreadedChunkUpdates;
+import com.falsepattern.falsetweaks.api.dynlights.FTDynamicLights;
 import cpw.mods.fml.common.Loader;
 
+import com.falsepattern.falsetweaks.modules.dynlights.base.DynamicLights;
+import com.falsepattern.rple.internal.client.dynlights.ColorDynamicLights;
 import makamys.neodymium.config.Config;
 import makamys.neodymium.util.virtualjar.IVirtualJar;
 import makamys.neodymium.util.virtualjar.VirtualJar;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.settings.GameSettings;
+import net.minecraft.entity.Entity;
 import net.minecraft.launchwrapper.Launch;
 
 import org.lwjgl.opengl.GLContext;
@@ -137,6 +141,22 @@ public class Compat {
         return IS_FALSE_TWEAKS_PRESENT;
     }
 
+    public static boolean ft$isDynamicLights() {
+        if (IS_FALSE_TWEAKS_PRESENT) {
+            return FalseTweaksCompat.isDynamicLights();
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean ft$isDynamicLightsCircular() {
+        if (IS_FALSE_TWEAKS_PRESENT) {
+            return FalseTweaksCompat.isDynamicLightsCircular();
+        } else {
+            return false;
+        }
+    }
+
     public static Tessellator tessellator() {
         if (IS_FALSE_TWEAKS_PRESENT) {
             return FalseTweaksCompat.getThreadTessellator();
@@ -233,13 +253,31 @@ public class Compat {
 
     //This extra bit of indirection is needed to avoid accidentally trying to load ThreadedChunkUpdates when FalseTweaks
     // is not installed.
-    private static class FalseTweaksCompat {
+    public static class FalseTweaksCompat {
         public static Tessellator getThreadTessellator() {
             if (ThreadedChunkUpdates.isEnabled()) {
                 return ThreadedChunkUpdates.getThreadTessellator();
             } else {
                 return Tessellator.instance;
             }
+        }
+
+        public static boolean isDynamicLights() {
+            return FTDynamicLights.isDynamicLights();
+        }
+
+        public static boolean isDynamicLightsCircular() {
+            return FTDynamicLights.isCircular();
+        }
+
+        public static int getLightLevel(Entity entity) {
+            return DynamicLights.INSTANCE.getLightLevel(entity);
+        }
+    }
+
+    public static class RPLECompat {
+        public static short getLightLevel(Entity entity) {
+            return ColorDynamicLights.INSTANCE.getLightLevel(entity);
         }
     }
 
