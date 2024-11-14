@@ -24,28 +24,19 @@ public class RenderUtilVanilla implements RenderUtil {
     public static final int POLYGON_OFFSET_C = 5;
     public static final int POLYGON_OFFSET_B = 6;
 
-    @Override
-    public void readMeshPolygon(int[] tessBuffer, int tessOffset, int[] polygonBuffer, int polygonOffset, float offsetX, float offsetY, float offsetZ, int vertices, ChunkMesh.Flags flags) {
-        val tessVertexSize = vertexSizeInTessellator();
-        val polygonVertexSize = vertexSizeInPolygonBuffer();
+    public void polygonize(int[] tessBuffer, int tessIndex, int[] polygonBuffer, int polygonIndex, float offsetX, float offsetY, float offsetZ, ChunkMesh.Flags flags) {
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_XPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tessIndex]) + offsetX);
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_YPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tessIndex + 1]) + offsetY);
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_ZPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tessIndex + 2]) + offsetZ);
 
-        for(int vi = 0; vi < vertices; vi++) {
-            int tI = tessOffset + vi * tessVertexSize;
-            int qI = polygonOffset + vi * polygonVertexSize;
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_U] = tessBuffer[tessIndex + 3];
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_V] = tessBuffer[tessIndex + 4];
 
-            polygonBuffer[qI + POLYGON_OFFSET_XPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI]) + offsetX);
-            polygonBuffer[qI + POLYGON_OFFSET_YPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI + 1]) + offsetY);
-            polygonBuffer[qI + POLYGON_OFFSET_ZPOS] = Float.floatToRawIntBits(Float.intBitsToFloat(tessBuffer[tI + 2]) + offsetZ);
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_C] = flags.hasColor ? tessBuffer[tessIndex + 5] : DEFAULT_COLOR;
 
-            polygonBuffer[qI + POLYGON_OFFSET_U] = tessBuffer[tI + 3];
-            polygonBuffer[qI + POLYGON_OFFSET_V] = tessBuffer[tI + 4];
+        // TODO normals?
 
-            polygonBuffer[qI + POLYGON_OFFSET_C] = flags.hasColor ? tessBuffer[tI + 5] : DEFAULT_COLOR;
-
-            // TODO normals?
-
-            polygonBuffer[qI + POLYGON_OFFSET_B] = flags.hasBrightness ? tessBuffer[tI + 7] : DEFAULT_BRIGHTNESS;
-        }
+        polygonBuffer[polygonIndex + POLYGON_OFFSET_B] = flags.hasBrightness ? tessBuffer[tessIndex + 7] : DEFAULT_BRIGHTNESS;
     }
 
     @Override

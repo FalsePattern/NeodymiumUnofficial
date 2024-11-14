@@ -10,7 +10,7 @@ public interface RenderUtil {
     int POLYGON_OFFSET_YPOS = 1;
     int POLYGON_OFFSET_ZPOS = 2;
 
-    void readMeshPolygon(int[] tessBuffer, int tessOffset, int[] polygonBuffer, int polygonOffset, float offsetX, float offsetY, float offsetZ, int vertices, ChunkMesh.Flags flags);
+    void polygonize(int[] tessBuffer, int tessOffset, int[] polygonBuffer, int polygonOffset, float offsetX, float offsetY, float offsetZ, ChunkMesh.Flags flags);
 
     /**
      * @implSpec These needs to be kept in sync with the attributes in {@link NeoRenderer#init()}

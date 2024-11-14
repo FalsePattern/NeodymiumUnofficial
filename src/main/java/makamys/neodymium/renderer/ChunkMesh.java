@@ -86,13 +86,11 @@ public class ChunkMesh extends Mesh {
         if(t.drawMode != GL11.GL_QUADS && t.drawMode != GL11.GL_TRIANGLES) {
             errors.add("Unsupported draw mode: " + t.drawMode);
         }
+        boolean triangulate = t.drawMode == GL11.GL_QUADS;
         if (drawMode == -1) {
-            drawMode = t.drawMode;
-            verticesPerPolygon = t.drawMode == GL11.GL_QUADS ? 4 : 3;
-        } else if (drawMode != t.drawMode) {
-            errors.add("Mismatched draw mode. Expected: " + drawMode + ", tessellator: " + t.drawMode);
+            drawMode = GL11.GL_TRIANGLES;
+            verticesPerPolygon = 3;
         }
-        int vertices = verticesPerPolygon;
 
         if(!t.hasTexture) {
             errors.add(String.format("Texture data is missing."));
@@ -110,15 +108,18 @@ public class ChunkMesh extends Mesh {
         FLAGS.hasBrightness = t.hasBrightness;
         FLAGS.hasColor = t.hasColor;
 
-        int tessellatorVertexSize = Neodymium.util.vertexSizeInTessellator();
-        int polygonSize = Neodymium.util.polygonSize(vertices);
+        int inputVertices = triangulate ? 4 : 3;
+        int outputVertexMultiplier = triangulate ? 2 : 1;
 
-        int polygonCount = t.vertexCount / vertices;
+        int tessellatorVertexSize = Neodymium.util.vertexSizeInTessellator();
+        int polygonSize = Neodymium.util.polygonSize(3) * outputVertexMultiplier;
+
+        int polygonCount = t.vertexCount / inputVertices;
 
         val buf = polygonBuf.get();
         buf.ensureCapacity(polygonCount * polygonSize);
         for(int polygonI = 0; polygonI < polygonCount; polygonI++) {
-            boolean deleted = MeshPolygon.processPolygon(t.rawBuffer, polygonI * vertices * tessellatorVertexSize, buf.data, buf.size, NeoRegion.toRelativeOffset(-t.xOffset), NeoRegion.toRelativeOffset(-t.yOffset), NeoRegion.toRelativeOffset(-t.zOffset), vertices, FLAGS);
+            boolean deleted = MeshPolygon.processPolygon(t.rawBuffer, polygonI * inputVertices * tessellatorVertexSize, buf.data, buf.size, NeoRegion.toRelativeOffset(-t.xOffset), NeoRegion.toRelativeOffset(-t.yOffset), NeoRegion.toRelativeOffset(-t.zOffset), triangulate, FLAGS);
             if (!deleted) {
                 buf.size += polygonSize;
             }
