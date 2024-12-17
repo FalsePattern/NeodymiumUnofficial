@@ -150,7 +150,9 @@ public abstract class MixinWorldRenderer implements NeodymiumWorldRenderer {
             at = @At("HEAD"),
             require = 1)
     private void prePreRenderBlocks(int pass, CallbackInfo ci) {
-        nd$chunkMeshes.set(pass, nd$beginRenderPass(pass));
+        if (Neodymium.isActive() && nd$chunkMeshes != null) {
+            nd$chunkMeshes.set(pass, nd$beginRenderPass(pass));
+        }
     }
 
     @Redirect(method = "preRenderBlocks",
@@ -176,7 +178,9 @@ public abstract class MixinWorldRenderer implements NeodymiumWorldRenderer {
             at = @At("RETURN"),
             require = 1)
     private void postPostRenderBlocks(int pass, EntityLivingBase entity, CallbackInfo ci) {
-        nd$endRenderPass(nd$chunkMeshes.get(pass));
+        if (Neodymium.isActive() && nd$chunkMeshes != null) {
+            nd$endRenderPass(nd$chunkMeshes.get(pass));
+        }
     }
 
     @Inject(method = "setDontDraw",
