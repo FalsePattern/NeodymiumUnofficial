@@ -243,6 +243,10 @@ public class ChunkMesh extends Mesh {
         wr.updateRenderer(Minecraft.getMinecraft().thePlayer);
         return ((NeodymiumWorldRenderer)wr).nd$getChunkMeshes();
     }
+
+    public WorldRenderer wr() {
+        return wr;
+    }
     
     @Override
     public int writeToIndexBuffer(IntBuffer piFirst, IntBuffer piCount, int cameraXDiv, int cameraYDiv, int cameraZDiv, int pass) {
