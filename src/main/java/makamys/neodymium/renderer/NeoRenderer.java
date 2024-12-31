@@ -126,8 +126,8 @@ public class NeoRenderer {
 
         var rendered = 0;
         if (shouldRender) {
+            updateGLValues();
             if (opaquePass) {
-                updateGLValues();
                 updateEyePos(alpha);
 
                 if (!isShadowPass)
