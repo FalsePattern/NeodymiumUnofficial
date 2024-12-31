@@ -48,8 +48,8 @@ repositories {
 }
 
 dependencies {
-    compileOnly("com.falsepattern:rple-mc1.7.10:1.3.0:dev")
-    devOnlyNonPublishable("com.falsepattern:falsetweaks-mc1.7.10:3.4.0:dev")
+    compileOnly("com.falsepattern:rple-mc1.7.10:1.5.0:dev")
+    compileOnly("com.falsepattern:falsetweaks-mc1.7.10:3.8.3:dev")
 
     compileOnly("optifine:optifine:1.7.10_hd_u_e7:dev")
 }
