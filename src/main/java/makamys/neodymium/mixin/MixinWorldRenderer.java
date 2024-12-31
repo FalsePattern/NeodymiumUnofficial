@@ -158,6 +158,7 @@ public abstract class MixinWorldRenderer implements NeodymiumWorldRenderer {
     @Redirect(method = "preRenderBlocks",
               at = @At(value = "INVOKE",
                        target = "Lorg/lwjgl/opengl/GL11;glNewList(II)V"),
+              remap = false,
               require = 1)
     private void noNewList(int list, int mode) {
         if (!Neodymium.isActive() || Compat.keepRenderListLogic()) {
@@ -168,6 +169,7 @@ public abstract class MixinWorldRenderer implements NeodymiumWorldRenderer {
     @Redirect(method = "postRenderBlocks",
               at = @At(value = "INVOKE",
                        target = "Lorg/lwjgl/opengl/GL11;glEndList()V"),
+              remap = false,
               require = 1)
     private void noEndList() {
         if (!Neodymium.isActive() || Compat.keepRenderListLogic())
