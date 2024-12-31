@@ -14,4 +14,4 @@ jobs:
     with:
       timeout: 90
       workspace: setupCIWorkspace
-      client-only: false
+      client-only: true
